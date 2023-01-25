@@ -15,7 +15,7 @@ setup(
         "ephem",
         "tabulate",
         "opencv-python==4.2.0.32",
-        "numpy==1.21.0",
+        "numpy>=1.21.0, <1.24.0",
         "matplotlib",
         "six",
         "simple-watchdog-timer",
