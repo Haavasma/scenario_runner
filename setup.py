@@ -5,7 +5,7 @@ setup(
     version="0.9.13",
     description="Scenario Runner",
     packages=[package for package in find_packages() if package.startswith("srunner")],
-    py_modules=["scenario_runner", "srunner"],
+    py_modules=["scenario_runner", "srunner", "manual_control"],
     install_requires=[
         "py-trees==0.8.3",
         "networkx==2.2",
