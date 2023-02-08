@@ -4,8 +4,8 @@ setup(
     name="scenario_runner",
     version="0.9.13",
     description="Scenario Runner",
-    packages=[package for package in find_packages() if package.startswith("srunner")],
-    py_modules=["scenario_runner", "srunner", "manual_control"],
+    # packages=[package for package in find_packages() if package.startswith("srunner")],
+    py_modules=["scenario_runner", "srunner", "manual_control", "agents"],
     install_requires=[
         "py-trees==0.8.3",
         "networkx==2.2",
@@ -19,5 +19,6 @@ setup(
         "matplotlib",
         "six",
         "simple-watchdog-timer",
+        "carla==0.9.13",
     ],
 )
