@@ -7,7 +7,7 @@ setup(
     # include srunner and agents modules
     packages=find_packages(),
     # include scenario_runner.py
-    py_modules=["scenario_runner, agents"],
+    py_modules=["scenario_runner", "agents", "srunner", "manual_control"],
     install_requires=[
         "py-trees==0.8.3",
         "networkx==2.2",
