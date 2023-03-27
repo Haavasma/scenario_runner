@@ -164,6 +164,7 @@ class ScenarioManager(object):
 
             # Update game time and actor information
             GameTime.on_carla_tick(timestamp)
+            CarlaDataProvider.on_carla_tick()
 
             if self._agent is not None:
                 ego_action = self._agent()  # pylint: disable=not-callable

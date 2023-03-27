@@ -145,21 +145,42 @@ class CarlaDataProvider(object):  # pylint: disable=too-many-public-methods
         """
         returns the absolute velocity for the given actor
         """
-        return calculate_velocity(actor)
+        for key in CarlaDataProvider._actor_velocity_map:
+            if key.id == actor.id:
+                return CarlaDataProvider._actor_velocity_map[key]
+
+        # We are intentionally not throwing here
+        # This may cause exception loops in py_trees
+        print("{}.get_velocity: {} not found!".format(__name__, actor))
+        return 0.0
 
     @staticmethod
     def get_location(actor):
         """
         returns the location for the given actor
         """
-        return actor.get_location()
+        for key in CarlaDataProvider._actor_location_map:
+            if key.id == actor.id:
+                return CarlaDataProvider._actor_location_map[key]
+
+        # We are intentionally not throwing here
+        # This may cause exception loops in py_trees
+        print("{}.get_location: {} not found!".format(__name__, actor))
+        return None
 
     @staticmethod
     def get_transform(actor):
         """
         returns the transform for the given actor
         """
-        return actor.get_transform()
+        for key in CarlaDataProvider._actor_transform_map:
+            if key.id == actor.id:
+                return CarlaDataProvider._actor_transform_map[key]
+
+        # We are intentionally not throwing here
+        # This may cause exception loops in py_trees
+        print("{}.get_transform: {} not found!".format(__name__, actor))
+        return None
 
     @staticmethod
     def set_client(client):
