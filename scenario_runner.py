@@ -41,7 +41,7 @@ from srunner.tools.scenario_parser import ScenarioConfigurationParser
 from srunner.tools.route_parser import RouteParser
 
 # Version of scenario_runner
-VERSION = "0.9.13"
+VERSION = "0.9.14"
 
 
 class ScenarioRunner(object):
@@ -183,19 +183,28 @@ class ScenarioRunner(object):
         if self.world is not None and self._args.sync:
             try:
                 # Reset to asynchronous mode
+                print("GETTING SETTINGS")
+                print("WORLD IS {}".format(self.world))
+                self.world = self.client.get_world()
                 settings = self.world.get_settings()
                 settings.synchronous_mode = False
                 settings.fixed_delta_seconds = None
+                print("APPLYING SETTINGS")
+                print("WORLD IS {}".format(self.world))
                 self.world.apply_settings(settings)
+                print("SETTING TRAFFICMANAGER SYNC MODE")
                 self.client.get_trafficmanager(
                     int(self._args.trafficManagerPort)
                 ).set_synchronous_mode(False)
+                print("DONE")
             except RuntimeError:
                 print("Error: Failed to reset synchronous mode")
                 sys.exit(-1)
 
+        print("Cleaning up manager")
         self.manager.cleanup()
 
+        print("Cleaning up CarlaDataProvider")
         CarlaDataProvider.cleanup()
 
         for i, _ in enumerate(self.ego_vehicles):
@@ -289,8 +298,10 @@ class ScenarioRunner(object):
             print("All scenario tests were passed successfully!")
         else:
             print("Not all scenario tests were successful")
-            if not (self._args.output or filename or junit_filename):
-                print("Please run with --output for further information")
+            # if not (self._args.output or filename or junit_filename):
+            #     print("Please run with --output for further information")
+
+        print("ANALYZED SCENARIO")
 
     def _record_criteria(self, criteria, name):
         """
@@ -448,6 +459,7 @@ class ScenarioRunner(object):
 
             # Provide outputs if required
             self._analyze_scenario(config)
+            print("REMOVING ALL ACTORS")
 
             # Remove all actors, stop the recorder and save all criterias (if needed)
             scenario.remove_all_actors()

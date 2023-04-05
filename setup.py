@@ -31,6 +31,6 @@ setup(
         "matplotlib",
         "six",
         "simple-watchdog-timer",
-        "carla==0.9.13",
+        "carla==0.9.14",
     ],
 )
