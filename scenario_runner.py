@@ -180,26 +180,26 @@ class ScenarioRunner(object):
         self.finished = True
 
         # Simulation still running and in synchronous mode?
-        if self.world is not None and self._args.sync:
-            try:
-                # Reset to asynchronous mode
-                print("GETTING SETTINGS")
-                print("WORLD IS {}".format(self.world))
-                self.world = self.client.get_world()
-                settings = self.world.get_settings()
-                settings.synchronous_mode = False
-                settings.fixed_delta_seconds = None
-                print("APPLYING SETTINGS")
-                print("WORLD IS {}".format(self.world))
-                self.world.apply_settings(settings)
-                print("SETTING TRAFFICMANAGER SYNC MODE")
-                self.client.get_trafficmanager(
-                    int(self._args.trafficManagerPort)
-                ).set_synchronous_mode(False)
-                print("DONE")
-            except RuntimeError:
-                print("Error: Failed to reset synchronous mode")
-                sys.exit(-1)
+        # if self.world is not None and self._args.sync:
+        #     try:
+        #         # Reset to asynchronous mode
+        #         print("GETTING SETTINGS")
+        #         print("WORLD IS {}".format(self.world))
+        #         self.world = self.client.get_world()
+        #         settings = self.world.get_settings()
+        #         settings.synchronous_mode = False
+        #         settings.fixed_delta_seconds = None
+        #         print("APPLYING SETTINGS")
+        #         print("WORLD IS {}".format(self.world))
+        #         self.world.apply_settings(settings)
+        #         print("SETTING TRAFFICMANAGER SYNC MODE")
+        #         self.client.get_trafficmanager(
+        #             int(self._args.trafficManagerPort)
+        #         ).set_synchronous_mode(False)
+        #         print("DONE")
+        #     except RuntimeError:
+        #         print("Error: Failed to reset synchronous mode")
+        #         sys.exit(-1)
 
         print("Cleaning up manager")
         self.manager.cleanup()
@@ -340,6 +340,7 @@ class ScenarioRunner(object):
         Load a new CARLA world and provide data to CarlaDataProvider
         """
 
+        print("LOADING WORLD")
         if self._args.reloadWorld:
             self.world = self.client.load_world(town)
         else:
@@ -361,11 +362,13 @@ class ScenarioRunner(object):
 
         self.world = self.client.get_world()
 
-        if self._args.sync:
-            settings = self.world.get_settings()
-            settings.synchronous_mode = True
-            settings.fixed_delta_seconds = 1.0 / self.frame_rate
-            self.world.apply_settings(settings)
+        print("CHANGING SETTINGS")
+        # if self._args.sync:
+        #     settings = self.world.get_settings()
+        #     settings.synchronous_mode = True
+        #     settings.fixed_delta_seconds = 1.0 / self.frame_rate
+        #     print("APPLYING SETTINGS")
+        #     self.world.apply_settings(settings)
 
         CarlaDataProvider.set_client(self.client)
         CarlaDataProvider.set_world(self.world)
@@ -561,6 +564,7 @@ class ScenarioRunner(object):
         """
         Run all scenarios according to provided commandline args
         """
+        print("RUNNING SCENARIO")
         result = True
         if self._args.openscenario:
             result = self._run_openscenario()
