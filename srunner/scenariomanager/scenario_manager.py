@@ -121,38 +121,43 @@ class ScenarioManager(object):
         """
         print("ScenarioManager: Running scenario {}".format(self.scenario_tree.name))
         self.start_system_time = time.time()
-        start_game_time = GameTime.get_time()
+        self.start_game_time = GameTime.get_time()
 
         self._watchdog = Watchdog(float(self._timeout))
         self._watchdog.start()
         self._running = True
 
-        while self._running:
-            timestamp = None
-            world = CarlaDataProvider.get_world()
-            if world:
-                snapshot = world.get_snapshot()
-                if snapshot:
-                    timestamp = snapshot.timestamp
-            if timestamp:
-                self._tick_scenario(timestamp)
-
+    def stop_scenario(self):
         self.cleanup()
 
         self.end_system_time = time.time()
         end_game_time = GameTime.get_time()
 
         self.scenario_duration_system = self.end_system_time - self.start_system_time
-        self.scenario_duration_game = end_game_time - start_game_time
+        self.scenario_duration_game = end_game_time - self.start_game_time
+
+        print(
+            f"SCENARIO DURATION SYSTEM: {self.scenario_duration_system}, SCENARIO DURATION GAME: {self.scenario_duration_game}"
+        )
 
         if self.scenario_tree.status == py_trees.common.Status.FAILURE:
             print("ScenarioManager: Terminated due to failure")
 
-    def _tick_scenario(self, timestamp):
+        self._running = False
+
+    def tick_scenario(self) -> bool:
         """
         Run next tick of scenario and the agent.
         If running synchornously, it also handles the ticking of the world.
         """
+        timestamp = None
+        world = CarlaDataProvider.get_world()
+        if world:
+            snapshot = world.get_snapshot()
+            if snapshot:
+                timestamp = snapshot.timestamp
+        if not timestamp:
+            raise Exception("ScenarioManager: Could not retrieve timestamp from CARLA")
 
         if self._timestamp_last_run < timestamp.elapsed_seconds and self._running:
             self._timestamp_last_run = timestamp.elapsed_seconds
@@ -163,7 +168,9 @@ class ScenarioManager(object):
                 print("\n--------- Tick ---------\n")
 
             # Update game time and actor information
+            print("ON CARLA TICK")
             GameTime.on_carla_tick(timestamp)
+            print("ON CARLA TICK DATA PROVIDER")
             CarlaDataProvider.on_carla_tick()
 
             if self._agent is not None:
@@ -181,10 +188,12 @@ class ScenarioManager(object):
                 sys.stdout.flush()
 
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
-                self._running = False
+                return False
 
         if self._sync_mode and self._running and self._watchdog.get_status():
             CarlaDataProvider.get_world().tick()
+
+        return True
 
     def get_running_status(self):
         """
@@ -192,12 +201,6 @@ class ScenarioManager(object):
            bool:  False if watchdog exception occured, True otherwise
         """
         return self._watchdog.get_status()
-
-    def stop_scenario(self):
-        """
-        This function is used by the overall signal handler to terminate the scenario execution
-        """
-        self._running = False
 
     def analyze_scenario(self, stdout, filename, junit, json):
         """
@@ -228,6 +231,10 @@ class ScenarioManager(object):
         if self.scenario.timeout_node.timeout and not failure:
             timeout = True
             result = "TIMEOUT"
+
+        print(
+            f"result: {result}, stdout: {stdout}, filename: {filename}, junit: {junit}, json: {json}"
+        )
 
         output = ResultOutputProvider(self, result, stdout, filename, junit, json)
         output.write()

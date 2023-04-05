@@ -175,31 +175,28 @@ class ScenarioRunner(object):
         Remove and destroy all actors
         """
         if self.finished:
+            print("FINISHED")
             return
 
         self.finished = True
 
         # Simulation still running and in synchronous mode?
-        # if self.world is not None and self._args.sync:
-        #     try:
-        #         # Reset to asynchronous mode
-        #         print("GETTING SETTINGS")
-        #         print("WORLD IS {}".format(self.world))
-        #         self.world = self.client.get_world()
-        #         settings = self.world.get_settings()
-        #         settings.synchronous_mode = False
-        #         settings.fixed_delta_seconds = None
-        #         print("APPLYING SETTINGS")
-        #         print("WORLD IS {}".format(self.world))
-        #         self.world.apply_settings(settings)
-        #         print("SETTING TRAFFICMANAGER SYNC MODE")
-        #         self.client.get_trafficmanager(
-        #             int(self._args.trafficManagerPort)
-        #         ).set_synchronous_mode(False)
-        #         print("DONE")
-        #     except RuntimeError:
-        #         print("Error: Failed to reset synchronous mode")
-        #         sys.exit(-1)
+        if self.world is not None and self._args.sync:
+            try:
+                # Reset to asynchronous mode
+                self.world = self.client.get_world()
+                settings = self.world.get_settings()
+                settings.synchronous_mode = False
+                settings.fixed_delta_seconds = None
+                print("APPLYING SETTINGS")
+                self.world.apply_settings(settings)
+                self.client.get_trafficmanager(
+                    int(self._args.trafficManagerPort)
+                ).set_synchronous_mode(False)
+
+            except RuntimeError:
+                print("Error: Failed to reset synchronous mode")
+                sys.exit(-1)
 
         print("Cleaning up manager")
         self.manager.cleanup()
@@ -339,8 +336,6 @@ class ScenarioRunner(object):
         """
         Load a new CARLA world and provide data to CarlaDataProvider
         """
-
-        print("LOADING WORLD")
         if self._args.reloadWorld:
             self.world = self.client.load_world(town)
         else:
@@ -362,13 +357,12 @@ class ScenarioRunner(object):
 
         self.world = self.client.get_world()
 
-        print("CHANGING SETTINGS")
-        # if self._args.sync:
-        #     settings = self.world.get_settings()
-        #     settings.synchronous_mode = True
-        #     settings.fixed_delta_seconds = 1.0 / self.frame_rate
-        #     print("APPLYING SETTINGS")
-        #     self.world.apply_settings(settings)
+        if self._args.sync:
+            settings = self.world.get_settings()
+            settings.synchronous_mode = True
+            settings.fixed_delta_seconds = 1.0 / self.frame_rate
+            print("APPLYING SETTINGS")
+            self.world.apply_settings(settings)
 
         CarlaDataProvider.set_client(self.client)
         CarlaDataProvider.set_world(self.world)
@@ -392,6 +386,7 @@ class ScenarioRunner(object):
         Load and run the scenario given by config
         """
         result = False
+        self.config = config
         if not self._load_and_wait_for_world(config.town, config.ego_vehicles):
             self._cleanup()
             return False
@@ -420,23 +415,23 @@ class ScenarioRunner(object):
         try:
             self._prepare_ego_vehicles(config.ego_vehicles)
             if self._args.openscenario:
-                scenario = OpenScenario(
+                self.scenario = OpenScenario(
                     world=self.world,
                     ego_vehicles=self.ego_vehicles,
-                    config=config,
+                    config=self.config,
                     config_file=self._args.openscenario,
                     timeout=100000,
                 )
             elif self._args.route:
-                scenario = RouteScenario(
-                    world=self.world, config=config, debug_mode=self._args.debug
+                self.scenario = RouteScenario(
+                    world=self.world, config=self.config, debug_mode=self._args.debug
                 )
             else:
-                scenario_class = self._get_scenario_class_or_fail(config.type)
-                scenario = scenario_class(
+                scenario_class = self._get_scenario_class_or_fail(self.config.type)
+                self.scenario = scenario_class(
                     self.world,
                     self.ego_vehicles,
-                    config,
+                    self.config,
                     self._args.randomize,
                     self._args.debug,
                 )
@@ -449,38 +444,44 @@ class ScenarioRunner(object):
 
         try:
             if self._args.record:
-                recorder_name = "{}/{}/{}.log".format(
+                self.recorder_name = "{}/{}/{}.log".format(
                     os.getenv("SCENARIO_RUNNER_ROOT", "./"),
                     self._args.record,
-                    config.name,
+                    self.config.name,
                 )
-                self.client.start_recorder(recorder_name, True)
+                self.client.start_recorder(self.recorder_name, True)
 
             # Load scenario and run it
-            self.manager.load_scenario(scenario, self.agent_instance)
+            self.manager.load_scenario(self.scenario, self.agent_instance)
             self.manager.run_scenario()
-
-            # Provide outputs if required
-            self._analyze_scenario(config)
-            print("REMOVING ALL ACTORS")
-
-            # Remove all actors, stop the recorder and save all criterias (if needed)
-            scenario.remove_all_actors()
-            if self._args.record:
-                self.client.stop_recorder()
-                self._record_criteria(
-                    self.manager.scenario.get_criteria(), recorder_name
-                )
-
-            result = True
 
         except Exception as e:  # pylint: disable=broad-except
             traceback.print_exc()
             print(e)
             result = False
 
-        self._cleanup()
         return result
+
+    def tick_scenario(self):
+        return self.manager.tick_scenario()
+
+    def stop_scenario(self):
+        # Provide outputs if required
+        self.manager.stop_scenario()
+        self._analyze_scenario(self.config)
+
+        # Remove all actors, stop the recorder and save all criterias (if needed)
+        self.scenario.remove_all_actors()
+        if self._args.record:
+            self.client.stop_recorder()
+            self._record_criteria(
+                self.manager.scenario.get_criteria(), self.recorder_name
+            )
+
+        print("CLEANING UP")
+        self._cleanup()
+
+        return True
 
     def _run_scenarios(self):
         """
