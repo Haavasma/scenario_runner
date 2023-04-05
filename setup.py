@@ -8,7 +8,7 @@ def print_package(package):
 
 setup(
     name="scenario_runner",
-    version="0.9.13",
+    version="0.9.14",
     description="Scenario Runner",
     # include srunner and agents modules
     packages=[
