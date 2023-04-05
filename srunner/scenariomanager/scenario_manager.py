@@ -168,9 +168,7 @@ class ScenarioManager(object):
                 print("\n--------- Tick ---------\n")
 
             # Update game time and actor information
-            print("ON CARLA TICK")
             GameTime.on_carla_tick(timestamp)
-            print("ON CARLA TICK DATA PROVIDER")
             CarlaDataProvider.on_carla_tick()
 
             if self._agent is not None:
