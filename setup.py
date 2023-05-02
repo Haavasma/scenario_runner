@@ -14,7 +14,9 @@ setup(
     packages=[
         package
         for package in find_packages()
-        if package.startswith("srunner") or package.startswith("agents")
+        if package.startswith("srunner")
+        or package.startswith("agents")
+        or package.startswith("leaderboard")
     ],
     # include scenario_runner.py
     py_modules=["scenario_runner", "agents", "srunner", "manual_control"],
